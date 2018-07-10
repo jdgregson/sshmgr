@@ -61,7 +61,7 @@ function Show-Help() {
     $help.Add($(New-Object PSObject -Prop @{'Command'='args';'Description'='Show SSH arguments';'Example'='args';'Alias'=''})) | Out-Null
     $help.Add($(New-Object PSObject -Prop @{'Command'='help';'Description'='Show this help message';'Example'='help';'Alias'='?, h'})) | Out-Null
     $help.Add($(New-Object PSObject -Prop @{'Command'='x';'Description'='x';'Example'='x';'Alias'='x'})) | Out-Null
-    $help | Format-Table
+    $help | Sort-Object Command | Format-Table
 }
 
 
