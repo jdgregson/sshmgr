@@ -1,4 +1,4 @@
-# sshmgr - an interactive SSH connection manager for PowerShell
+# sshmgr - an interactive, text-based SSH connection manager for PowerShell
 # Copyright (C) 2018 - jdgregson
 # License: GNU GPLv3
 
