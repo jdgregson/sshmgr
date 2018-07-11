@@ -98,10 +98,16 @@ function Edit-SavedConnectionNotepad($number) {
 
 
 function Rename-SavedConnection($number) {
-    $original_name = $global:saved_connections[$number].Name
+    $original_name = $global:saved_connections[$number].Name -Replace ".txt"
     $new_name = Read-Host "Enter new name for $original_name"
     if($new_name -and $new_name -ne $original_name) {
-        Rename-Item $global:saved_connections[$number] $new_name
+        if(-not(Test-Path "$CONNECTION_FOLDER\$new_name.txt")) {
+            Rename-Item $global:saved_connections[$number] "$new_name.txt"
+        } else {
+            Write-Host "$new_name already exists"
+            Rename-SavedConnection $number
+            return
+        }
     }
     $global:saved_connections = Get-SavedConnections
 }
