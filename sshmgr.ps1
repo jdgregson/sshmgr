@@ -34,13 +34,18 @@ function Show-SavedConnections() {
 
 function Create-NewSavedConnection() {
     $name = Read-Host "Enter new saved connection name"
+    if(-not($name)) {
+        Write-Host "You must enter a name"
+        Create-NewSavedConnection
+        return
+    }
     $file = "$CONNECTION_FOLDER\$name.txt"
     if(Test-Path $file) {
         Write-Host "$name already exists"
         Create-NewSavedConnection
         return
     }
-    New-Item $file
+    $out = New-Item $file | Out-String
     $(Get-Input "Enter the SSH string for $name" $name "ssh -p 22 $name") > $file
     $global:saved_connections = Get-SavedConnections
 }
