@@ -52,11 +52,13 @@ function Create-NewSavedConnection() {
 
 
 function Connect-SavedConnection($number) {
+    if(IsInvalidInput $number) {return}
     Invoke-Expression $(Get-Content $global:saved_connections[$number])
 }
 
 
 function Delete-SavedConnection($number) {
+    if(IsInvalidInput $number) {return}
     $name = $global:saved_connections[$number].Name -Replace ".txt"
     if((Read-Host "Delete $name`? (y/N)") -eq "y") {
         Remove-Item -Force $global:saved_connections[$number]
@@ -73,6 +75,7 @@ function Delete-SavedConnection($number) {
 
 
 function Copy-SavedConnection($number) {
+    if(IsInvalidInput $number) {return}
     $name = Read-Host "Enter new saved connection name"
     $file = "$CONNECTION_FOLDER\$name.txt"
     Copy-Item $global:saved_connections[$number] $file
@@ -81,6 +84,7 @@ function Copy-SavedConnection($number) {
 
 
 function Edit-SavedConnection($number) {
+    if(IsInvalidInput $number) {return}
     $original_string = Get-Content $global:saved_connections[$number]
     $name = $global:saved_connections[$number].Name
     $new_string = Get-Input "Enter the SSH string for $name" $name $original_string
@@ -92,12 +96,14 @@ function Edit-SavedConnection($number) {
 
 
 function Edit-SavedConnectionNotepad($number) {
+    if(IsInvalidInput $number) {return}
     notepad.exe $global:saved_connections[$number] | Out-Null
     $global:saved_connections = Get-SavedConnections
 }
 
 
 function Rename-SavedConnection($number) {
+    if(IsInvalidInput $number) {return}
     $original_name = $global:saved_connections[$number].Name -Replace ".txt"
     $new_name = Read-Host "Enter new name for $original_name"
     if($new_name -and $new_name -ne $original_name) {
@@ -110,6 +116,21 @@ function Rename-SavedConnection($number) {
         }
     }
     $global:saved_connections = Get-SavedConnections
+}
+
+function IsInvalidInput($number) {
+    try {
+        $number = [int]$number
+    } catch {}
+    $too_high = $number -ge $global:saved_connections.Count
+    $too_low = $number -lt 0
+    $not_a_number = -not($number -is [int])
+    if($too_high -or $too_low -or $not_a_number) {
+        Write-Host "$number is not a saved connection"
+        return $True
+    } else {
+        return $False
+    }
 }
 
 
