@@ -57,7 +57,17 @@ function Connect-SavedConnection($number) {
 
 
 function Delete-SavedConnection($number) {
-    Remove-Item -Force $global:saved_connections[$number]
+    $name = $global:saved_connections[$number].Name -Replace ".txt"
+    if((Read-Host "Delete $name`? (y/N)") -eq "y") {
+        Remove-Item -Force $global:saved_connections[$number]
+        if(Test-Path "$CONNECTION_FOLDER\$name.txt") {
+            Write-Host "Unable to delete $name"
+        } else {
+            Write-Host "$name was deleted"
+        }
+    } else {
+        Write-Host "Not deleting $name"
+    }
     $global:saved_connections = Get-SavedConnections
 }
 
