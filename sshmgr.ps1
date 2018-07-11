@@ -3,7 +3,7 @@
 # License: GNU GPLv3
 
 $CONNECTION_FOLDER = "~\Documents\sshmgr"
-$global:saved_connections = @{}
+$global:saved_connections = @()
 [System.Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic') | Out-Null
 
 
