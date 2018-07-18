@@ -311,6 +311,9 @@ function Draw-UIMain() {
 }
 
 
+if(-not(Test-Path $CONNECTION_FOLDER)) {
+    $out = mkdir $CONNECTION_FOLDER | Out-String
+}
 while($True) {
     Reset-UIBufferSize
     if($update_ui) {
