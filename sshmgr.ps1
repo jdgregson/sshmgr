@@ -304,9 +304,19 @@ function Draw-UIMain() {
         Write-UIBox
         Write-UINewLine
     }
+    if($global:saved_connections.Count -eq 0) {
+        Write-UIBox
+        $message = "   <none>"
+        Write-UIText $message
+        Write-UIText (" " * ((Get-UIConsoleWidth) - ($message.length + 2)))
+        Write-UIBox
+        Write-UINewLine
+    }
 
     # draw the command preview line
-    $text = Get-Content $($global:saved_connections[$global:selected])
+    if($global:saved_connections.Count -gt 0) {
+        $text = Get-Content $($global:saved_connections[$global:selected])
+    }
     Write-UIWrappedText $text $true
 }
 
