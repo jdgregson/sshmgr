@@ -3,10 +3,10 @@
 # License: GNU GPLv3
 
 $CONNECTION_FOLDER = "~\Documents\sshmgr"
-$global:saved_connections = @()
+$script:saved_connections = @()
+$script:selected = 0;
 [System.Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic') | Out-Null
-$global:selected = 0;
-$update_ui = $True
+$script:update_ui = $True
 $UI_CHAR_BLOCK = " "
 $UI_CHAR_BORDER_BOTTOM = "_"
 
@@ -189,35 +189,35 @@ function New-SavedConnection() {
         $string = Read-UIPrompt "Enter SSH String" "Enter the SSH string for $name (e.g. `"ssh -p 22 $name`")" "SSH string"
         $string > $file
     } while(-not($string))
-    $global:saved_connections = Get-SavedConnections
+    $script:saved_connections = Get-SavedConnections
 }
 
 
 function Connect-SavedConnection($number) {
     if(IsInvalidInput $number) {return}
-    Invoke-Expression $(Get-Content $global:saved_connections[$number])
+    Invoke-Expression $(Get-Content $script:saved_connections[$number])
 }
 
 
 function Remove-SavedConnection($number) {
     if(IsInvalidInput $number) {return}
-    $name = $global:saved_connections[$number].Name -Replace ".txt"
+    $name = $script:saved_connections[$number].Name -Replace ".txt"
     $confirmaton = Read-UIPrompt "Delete $name" "Do you really want to delete $name`? " "Enter Y or N"
     if($confirmaton -eq "y") {
-        Remove-Item -Force $global:saved_connections[$number]
+        Remove-Item -Force $script:saved_connections[$number]
         if(Test-Path "$CONNECTION_FOLDER\$name.txt") {
             Write-UIError "Unable to delete $name"
         } else {
-            $global:selected--
+            $script:selected--
         }
     }
-    $global:saved_connections = Get-SavedConnections
+    $script:saved_connections = Get-SavedConnections
 }
 
 
 function Copy-SavedConnection($number) {
     if(IsInvalidInput $number) {return}
-    $old_name = $global:saved_connections[$number].Name -Replace ".txt"
+    $old_name = $script:saved_connections[$number].Name -Replace ".txt"
     $name = Read-UIPrompt "Duplicate $old_name" "Enter the name of the new saved connection (a copy of $old_name)" "Name"
     $file = "$CONNECTION_FOLDER\$name.txt"
     if(Test-Path $file) {
@@ -225,37 +225,37 @@ function Copy-SavedConnection($number) {
         Copy-SavedConnection $number
         return
     }
-    Copy-Item $global:saved_connections[$number] $file
-    $global:saved_connections = Get-SavedConnections
+    Copy-Item $script:saved_connections[$number] $file
+    $script:saved_connections = Get-SavedConnections
 }
 
 
 function Edit-SavedConnection($number) {
     if(IsInvalidInput $number) {return}
-    $original_string = Get-Content $global:saved_connections[$number]
-    $name = $global:saved_connections[$number].Name
+    $original_string = Get-Content $script:saved_connections[$number]
+    $name = $script:saved_connections[$number].Name
     $new_string = Read-UIPrompt "Edit $name" "Enter the new SSH string for $name (it was `"$original_string`")" "New string"
     if($new_string) {
-        $new_string > $global:saved_connections[$number]
+        $new_string > $script:saved_connections[$number]
     }
-    $global:saved_connections = Get-SavedConnections
+    $script:saved_connections = Get-SavedConnections
 }
 
 
 function Rename-SavedConnection($number) {
     if(IsInvalidInput $number) {return}
-    $original_name = $global:saved_connections[$number].Name -Replace ".txt"
+    $original_name = $script:saved_connections[$number].Name -Replace ".txt"
     $new_name = Read-UIPrompt "Rename $original_name" "Enter a new name for $original_name" "New name"
     if($new_name -and $new_name -ne $original_name) {
         if(-not(Test-Path "$CONNECTION_FOLDER\$new_name.txt")) {
-            Rename-Item $global:saved_connections[$number] "$new_name.txt"
+            Rename-Item $script:saved_connections[$number] "$new_name.txt"
         } else {
             Write-UIError "$new_name already exists, please enter a different name."
             Rename-SavedConnection $number
             return
         }
     }
-    $global:saved_connections = Get-SavedConnections
+    $script:saved_connections = Get-SavedConnections
 }
 
 
@@ -263,7 +263,7 @@ function IsInvalidInput($number) {
     try {
         $number = [int]$number
     } catch {}
-    $too_high = $number -ge $global:saved_connections.Count
+    $too_high = $number -ge $script:saved_connections.Count
     $too_low = $number -lt 0
     $not_a_number = -not($number -is [int])
     if($too_high -or $too_low -or $not_a_number) {
@@ -285,17 +285,17 @@ function Draw-UIMain() {
     Write-UIBlankLine
 
     # draw the saved connections menu
-    $global:saved_connections = Get-SavedConnections
+    $script:saved_connections = Get-SavedConnections
     Write-UITitleLine "SAVED CONNECTIONS"
-    for($i=0; $i -lt $global:saved_connections.Count; $i++) {
-        $connection = $global:saved_connections[$i]
+    for($i=0; $i -lt $script:saved_connections.Count; $i++) {
+        $connection = $script:saved_connections[$i]
         $name = $connection.Name -Replace ".txt"
         Write-UIBox
         if($name.length -gt ((Get-UIConsoleWidth) - 5)) {
             $name = $name.Substring(0, ((Get-UIConsoleWidth) - 8)) + "..."
         }
         Write-UIText "  "
-        if($i -eq $global:selected) {
+        if($i -eq $script:selected) {
             Write-UITextInverted $name
         } else {
             Write-UIText $name
@@ -304,7 +304,7 @@ function Draw-UIMain() {
         Write-UIBox
         Write-UINewLine
     }
-    if($global:saved_connections.Count -eq 0) {
+    if($script:saved_connections.Count -eq 0) {
         Write-UIBox
         $message = "   <none>"
         Write-UIText $message
@@ -314,8 +314,8 @@ function Draw-UIMain() {
     }
 
     # draw the command preview line
-    if($global:saved_connections.Count -gt 0) {
-        $text = Get-Content $($global:saved_connections[$global:selected])
+    if($script:saved_connections.Count -gt 0) {
+        $text = Get-Content $($script:saved_connections[$script:selected])
     }
     Write-UIWrappedText $text $true
 }
@@ -326,42 +326,42 @@ if(-not(Test-Path $CONNECTION_FOLDER)) {
 }
 while($True) {
     Reset-UIBufferSize
-    if($update_ui) {
+    if($script:update_ui) {
         Draw-UIMain
-        $update_ui = $False
+        $script:update_ui = $False
     }
 
     $input_char = [System.Console]::ReadKey($true)
     if($input_char.Key -eq [System.ConsoleKey]::DownArrow) {
-        if($global:selected -lt $global:saved_connections.Count-1) {
-            $global:selected++
-            $update_ui = $True
+        if($script:selected -lt $script:saved_connections.Count-1) {
+            $script:selected++
+            $script:update_ui = $True
         }
     } elseif($input_char.Key -eq [System.ConsoleKey]::UpArrow) {
-        if($global:selected -gt 0) {
-            $global:selected--
-            $update_ui = $True
+        if($script:selected -gt 0) {
+            $script:selected--
+            $script:update_ui = $True
         }
     } elseif($input_char.Key -eq "C" -and $input_char.Modifiers -eq "") {
         Clear-Host
         Write-Host "Connecting SSH session..."
-        Write-Host "Command: $(Get-Content $global:saved_connections[$global:selected])"
-        Connect-SavedConnection $global:selected
-        $update_ui = $True
+        Write-Host "Command: $(Get-Content $script:saved_connections[$script:selected])"
+        Connect-SavedConnection $script:selected
+        $script:update_ui = $True
     } elseif($input_char.Key -eq "D" -and $input_char.Modifiers -eq "") {
-        Remove-SavedConnection $global:selected
-        $update_ui = $True
+        Remove-SavedConnection $script:selected
+        $script:update_ui = $True
     } elseif($input_char.Key -eq "D" -and $input_char.Modifiers -eq "Control") {
-        Copy-SavedConnection $global:selected
-        $update_ui = $True
+        Copy-SavedConnection $script:selected
+        $script:update_ui = $True
     } elseif($input_char.Key -eq "N") {
         New-SavedConnection
-        $update_ui = $True
+        $script:update_ui = $True
     } elseif($input_char.Key -eq "E") {
-        Edit-SavedConnection $global:selected
-        $update_ui = $True
+        Edit-SavedConnection $script:selected
+        $script:update_ui = $True
     } elseif($input_char.Key -eq "R") {
-        Rename-SavedConnection $global:selected
-        $update_ui = $True
+        Rename-SavedConnection $script:selected
+        $script:update_ui = $True
     }
 }
