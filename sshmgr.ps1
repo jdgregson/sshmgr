@@ -9,6 +9,8 @@ $script:selected = 0;
 $script:update_ui = $True
 $UI_CHAR_BLOCK = " "
 $UI_CHAR_BORDER_BOTTOM = "_"
+$UI_FOREGROUND_COLOR = (Get-Host).UI.RawUI.ForegroundColor
+$UI_BACKGROUND_COLOR = (Get-Host).UI.RawUI.BackgroundColor
 
 
 
@@ -23,10 +25,18 @@ function Get-UIConsoleHeight() {
 }
 
 
+function Get-UIPSVersion() {
+    return $PSVersionTable.PSVersion.Major
+}
+
+
 function Write-UIText($message) {
     [System.Console]::Write($message)
 }
 
+function Pause-UI() {
+    cmd /c pause
+}
 
 function Write-UITextInverted($message) {
     $saved_background_color = (Get-Host).UI.RawUI.BackgroundColor
@@ -89,8 +99,10 @@ function Write-UIBlankLine() {
 }
 
 
-function Write-UINewLine() {
-    [System.Console]::Write("`n")
+function Write-UINewLine($force = $False) {
+    if((Get-UIPSVersion) -eq 5 -or $force -eq $true) {
+        [System.Console]::Write("`n")
+    }
 }
 
 
@@ -159,14 +171,14 @@ function Write-UIError($message, $title = "Error") {
     Write-UIBox 3
     (Get-Host).UI.RawUI.ForegroundColor = $saved_foreground_color
     (Get-Host).UI.RawUI.BackgroundColor = $saved_background_color
-    Pause
+    Pause-UI
 }
 
 
 
 # Script logic
 function Get-SavedConnections() {
-    return Get-Item $CONNECTION_FOLDER\*
+    return @(Get-Item $CONNECTION_FOLDER\*)
 }
 
 
@@ -178,18 +190,18 @@ function New-SavedConnection() {
         return
     }
     $file = "$CONNECTION_FOLDER\$name.txt"
-    if(Test-Path $file) {
+    if(Test-Path -Path $file) {
         Write-UIError "$name already exists"
         New-SavedConnection
         return
     }
-    $out = New-Item $file | Out-String
+    $out = New-Item -Path $file -Type "file" | Out-String
     $string = ""
     do {
         $string = Read-UIPrompt "Enter SSH String" "Enter the SSH string for $name (e.g. `"ssh -p 22 $name`")" "SSH string"
         $string > $file
     } while(-not($string))
-    $script:saved_connections = Get-SavedConnections
+    $script:saved_connections = @(Get-SavedConnections)
 }
 
 
@@ -211,7 +223,7 @@ function Remove-SavedConnection($number) {
             $script:selected--
         }
     }
-    $script:saved_connections = Get-SavedConnections
+    $script:saved_connections = @(Get-SavedConnections)
 }
 
 
@@ -226,7 +238,7 @@ function Copy-SavedConnection($number) {
         return
     }
     Copy-Item $script:saved_connections[$number] $file
-    $script:saved_connections = Get-SavedConnections
+    $script:saved_connections = @(Get-SavedConnections)
 }
 
 
@@ -238,7 +250,7 @@ function Edit-SavedConnection($number) {
     if($new_string) {
         $new_string > $script:saved_connections[$number]
     }
-    $script:saved_connections = Get-SavedConnections
+    $script:saved_connections = @(Get-SavedConnections)
 }
 
 
@@ -255,7 +267,7 @@ function Rename-SavedConnection($number) {
             return
         }
     }
-    $script:saved_connections = Get-SavedConnections
+    $script:saved_connections = @(Get-SavedConnections)
 }
 
 
@@ -285,7 +297,7 @@ function Draw-UIMain() {
     Write-UIBlankLine
 
     # draw the saved connections menu
-    $script:saved_connections = Get-SavedConnections
+    $script:saved_connections = @(Get-SavedConnections)
     Write-UITitleLine "SAVED CONNECTIONS"
     for($i=0; $i -lt $script:saved_connections.Count; $i++) {
         $connection = $script:saved_connections[$i]
@@ -342,13 +354,13 @@ while($True) {
             $script:selected--
             $script:update_ui = $True
         }
-    } elseif($input_char.Key -eq "C" -and $input_char.Modifiers -eq "") {
+    } elseif($input_char.Key -eq "C" -and "",0 -contains $input_char.Modifiers) {
         Clear-Host
         Write-Host "Connecting SSH session..."
         Write-Host "Command: $(Get-Content $script:saved_connections[$script:selected])"
         Connect-SavedConnection $script:selected
         $script:update_ui = $True
-    } elseif($input_char.Key -eq "D" -and $input_char.Modifiers -eq "") {
+    } elseif($input_char.Key -eq "D" -and "",0 -contains $input_char.Modifiers) {
         Remove-SavedConnection $script:selected
         $script:update_ui = $True
     } elseif($input_char.Key -eq "D" -and $input_char.Modifiers -eq "Control") {
