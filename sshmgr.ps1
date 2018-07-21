@@ -380,7 +380,7 @@ while($True) {
     }
 
     $input_char = [System.Console]::ReadKey($true)
-    if($input_char.Key -eq [System.ConsoleKey]::DownArrow) {
+    if($input_char.Key -eq [System.ConsoleKey]::DownArrow -or $input_char.Key -eq "J") {
         if($script:selected -lt $script:saved_connections.Count-1) {
             Update-SelectedMenuItem ($script:saved_connections[$script:selected].Name -Replace ".txt") `
                 ($script:saved_connections[$script:selected+1].Name -Replace ".txt") 1
@@ -389,7 +389,7 @@ while($True) {
             Set-UICursorPosition 0 ($script:command_preview_line)
             Write-UIWrappedText (Get-Content $script:saved_connections[$script:selected])
         }
-    } elseif($input_char.Key -eq [System.ConsoleKey]::UpArrow) {
+    } elseif($input_char.Key -eq [System.ConsoleKey]::UpArrow -or $input_char.Key -eq "K") {
         if($script:selected -gt 0) {
             Update-SelectedMenuItem ($script:saved_connections[$script:selected].Name -Replace ".txt") `
                 ($script:saved_connections[$script:selected-1].Name -Replace ".txt") -1
