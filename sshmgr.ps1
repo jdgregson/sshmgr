@@ -40,6 +40,14 @@ function Pause-UI() {
     cmd /c pause
 }
 
+
+function Write-UIBox($count = 1) {
+    if($count -gt 0) {
+        Write-UITextInverted $($UI_CHAR_BLOCK * $count)
+    }
+}
+
+
 function Write-UITextInverted($message) {
     $saved_background_color = (Get-Host).UI.RawUI.BackgroundColor
     $saved_foreground_color = (Get-Host).UI.RawUI.ForegroundColor
@@ -51,14 +59,7 @@ function Write-UITextInverted($message) {
 }
 
 
-function Write-UIBox($count = 1) {
-    if($count -gt 0) {
-        Write-UITextInverted $($UI_CHAR_BLOCK * $count)
-    }
-}
-
-
-function Write-UIWrappedText($text, $wrap_anywhere = $False) {
+function Write-UIWrappedText($text, $wrap_anywhere = $False, $width = (Get-UIConsoleWidth)) {
     if($wrap_anywhere) {
         $split = $text -Split ""
         $join = ""
@@ -68,11 +69,15 @@ function Write-UIWrappedText($text, $wrap_anywhere = $False) {
     }
     $finished = $false
     $i = 0
+    $written_lines = 0;
     while(-not($finished)) {
         Write-UIBox 3
         $out_line = ""
         for(; $i -lt $split.Count; $i++) {
-            if(($out_line.length + 3 + ($split[$i]).length) -lt (Get-UIConsoleWidth)) {
+            if(($split[$i].length + 3) -ge (Get-UIConsoleWidth)) {
+                $split[$i] = $split[$i].substring(0, ((Get-UIConsoleWidth) - 8)) + "..."
+            }
+            if(($out_line.length + 3 + ($split[$i]).length) -lt $width) {
                 $out_line += ($split[$i]) + $join
                 $finished = $True
             } else {
@@ -81,17 +86,18 @@ function Write-UIWrappedText($text, $wrap_anywhere = $False) {
             }
         }
         Write-UITextInverted $out_line
-        Write-UIBox $((Get-UIConsoleWidth) - ($out_line.length + 3))
+        $written_lines++
+        Write-UIBox $($width - ($out_line.length + 3))
         Write-UINewLine
     }
 }
 
 
 function Write-UITitleLine($title) {
-    Write-UIBox 3
-    Write-UITextInverted $title
-    Write-UIBox $((Get-UIConsoleWidth) - ($title.length + 3))
-    Write-UINewLine
+    #Write-UIBox 3
+    Write-UIWrappedText $title
+    #Write-UIBox $((Get-UIConsoleWidth) - ($title.length + 3))
+    #Write-UINewLine
 }
 
 
@@ -152,7 +158,8 @@ function Read-UIPrompt($title, $text, $prompt) {
     Write-UIText (($UI_CHAR_BORDER_BOTTOM) * (Get-UIConsoleWidth))
     Set-UICursorOffset -3
     Write-UIBox 4
-    return Read-Host $prompt
+    Write-UITextInverted "$prompt`: "
+    return Read-Host
 }
 
 
@@ -174,6 +181,23 @@ function Write-UIError($message, $title = "Error") {
     (Get-Host).UI.RawUI.ForegroundColor = $saved_foreground_color
     (Get-Host).UI.RawUI.BackgroundColor = $saved_background_color
     Pause-UI
+}
+
+
+function Write-UIMenuItem($title, $selected = $False, $width = (Get-UIConsoleWidth)) {
+    Write-UIBox
+    if($title.length -gt ($width - 5)) {
+        $title = $title.Substring(0, ($width - 8)) + "..."
+    }
+    Write-UIText "  "
+    if($selected) {
+        Write-UITextInverted $title
+    } else {
+        Write-UIText $title
+    }
+    Write-UIText (" " * ($width - ($title.length) - 4))
+    Write-UIBox
+    Write-UINewLine $True
 }
 
 
@@ -305,19 +329,11 @@ function Draw-UIMain() {
     for($i=0; $i -lt $script:saved_connections.Count; $i++) {
         $connection = $script:saved_connections[$i]
         $name = $connection.Name -Replace ".txt"
-        Write-UIBox
-        if($name.length -gt ((Get-UIConsoleWidth) - 5)) {
-            $name = $name.Substring(0, ((Get-UIConsoleWidth) - 8)) + "..."
-        }
-        Write-UIText "  "
         if($i -eq $script:selected) {
-            Write-UITextInverted $name
+            Write-UIMenuItem $name $True
         } else {
-            Write-UIText $name
+            Write-UIMenuItem $name
         }
-        Write-UIText (" " * ((Get-UIConsoleWidth) - ($name.length) - 4))
-        Write-UIBox
-        Write-UINewLine
     }
     if($script:saved_connections.Count -eq 0) {
         Write-UIBox
