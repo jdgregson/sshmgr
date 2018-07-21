@@ -11,6 +11,8 @@ $UI_CHAR_BLOCK = " "
 $UI_CHAR_BORDER_BOTTOM = "_"
 $UI_FOREGROUND_COLOR = (Get-Host).UI.RawUI.ForegroundColor
 $UI_BACKGROUND_COLOR = (Get-Host).UI.RawUI.BackgroundColor
+$ORIG_FOREGROUND_COLOR = (Get-Host).UI.RawUI.ForegroundColor
+$ORIG_BACKGROUND_COLOR = (Get-Host).UI.RawUI.BackgroundColor
 
 
 
@@ -291,7 +293,8 @@ function Draw-UIMain() {
     Clear-Host
 
     # draw the commands list
-    $menu = "connect = c","new = n","edit = e","rename = r","delete = d","duplicate = ctrl + d"
+    $menu = "connect: c, ","new: n, ","edit: e, ","rename:r, ","delete: d, ",
+        "duplicate: ctrl + d, ","quit: q"
     Write-UITitleLine "COMMANDS"
     Write-UIWrappedText $menu
     Write-UIBlankLine
@@ -354,7 +357,8 @@ while($True) {
             $script:selected--
             $script:update_ui = $True
         }
-    } elseif($input_char.Key -eq "C" -and "",0 -contains $input_char.Modifiers) {
+    } elseif(($input_char.Key -eq "C" -and "",0 -contains $input_char.Modifiers) -or
+            $input_char.Key -eq "Enter") {
         Clear-Host
         Write-Host "Connecting SSH session..."
         Write-Host "Command: $(Get-Content $script:saved_connections[$script:selected])"
@@ -375,5 +379,10 @@ while($True) {
     } elseif($input_char.Key -eq "R") {
         Rename-SavedConnection $script:selected
         $script:update_ui = $True
+    } elseif($input_char.Key -eq "Q") {
+        Clear-Host
+        (Get-Host).UI.RawUI.ForegroundColor = $ORIG_FOREGROUND_COLOR
+        (Get-Host).UI.RawUI.BackgroundColor = $ORIG_BACKGROUND_COLOR
+        Exit
     }
 }
