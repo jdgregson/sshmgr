@@ -4,7 +4,10 @@
 
 $CONNECTION_FOLDER = "~\Documents\sshmgr"
 $script:saved_connections = @()
-$script:selected = 0;
+$script:selected = 0
+$script:ui_menu_selected_line = 0
+$script:ui_last_console_width = (Get-Host).UI.RawUI.WindowSize.Width
+$script:command_preview_line = 0
 [System.Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic') | Out-Null
 $script:update_ui = $True
 $UI_CHAR_BLOCK = " "
@@ -45,6 +48,11 @@ function Write-UIBox($count = 1) {
     if($count -gt 0) {
         Write-UITextInverted $($UI_CHAR_BLOCK * $count)
     }
+}
+
+
+function Reset-UIBufferSize() {
+    Set-UIBufferSize (Get-UIConsoleWidth)
 }
 
 
@@ -94,16 +102,15 @@ function Write-UIWrappedText($text, $wrap_anywhere = $False, $width = (Get-UICon
 
 
 function Write-UITitleLine($title) {
-    #Write-UIBox 3
     Write-UIWrappedText $title
-    #Write-UIBox $((Get-UIConsoleWidth) - ($title.length + 3))
-    #Write-UINewLine
 }
 
 
-function Write-UIBlankLine() {
-    Write-UIBox (Get-UIConsoleWidth)
-    Write-UINewLine
+function Write-UIBlankLine($count = 1) {
+    for($i=0; $i -lt $count; $i++) {
+        Write-UIBox (Get-UIConsoleWidth)
+        Write-UINewLine
+    }
 }
 
 
@@ -114,9 +121,10 @@ function Write-UINewLine($force = $False) {
 }
 
 
-function Set-UICursorOffset($offset) {
+function Set-UICursorOffset($x, $y) {
     $saved_position = (Get-Host).UI.RawUI.CursorPosition
-    $saved_position.Y = $saved_position.Y + $offset
+    $saved_position.X = $saved_position.X + $x
+    $saved_position.Y = $saved_position.Y + $y
     (Get-Host).UI.RawUI.CursorPosition = $saved_position
 }
 
@@ -141,11 +149,6 @@ function Set-UIBufferSize($width = $False, $height = $False) {
 }
 
 
-function Reset-UIBufferSize() {
-    Set-UIBufferSize (Get-UIConsoleWidth)
-}
-
-
 function Read-UIPrompt($title, $text, $prompt) {
     Reset-UIBufferSize
     Set-UICursorPosition 0 0
@@ -156,7 +159,7 @@ function Read-UIPrompt($title, $text, $prompt) {
     Write-UIBlankLine
     Write-UIBlankLine
     Write-UIText (($UI_CHAR_BORDER_BOTTOM) * (Get-UIConsoleWidth))
-    Set-UICursorOffset -3
+    Set-UICursorOffset 0 -3
     Write-UIBox 4
     Write-UITextInverted "$prompt`: "
     return Read-Host
@@ -176,7 +179,7 @@ function Write-UIError($message, $title = "Error") {
     Write-UIBlankLine
     Write-UIBlankLine
     Write-UIBlankLine
-    Set-UICursorOffset -2
+    Set-UICursorOffset 0 -2
     Write-UIBox 3
     (Get-Host).UI.RawUI.ForegroundColor = $saved_foreground_color
     (Get-Host).UI.RawUI.BackgroundColor = $saved_background_color
@@ -192,12 +195,22 @@ function Write-UIMenuItem($title, $selected = $False, $width = (Get-UIConsoleWid
     Write-UIText "  "
     if($selected) {
         Write-UITextInverted $title
+        $script:ui_menu_selected_line = (Get-Host).UI.RawUI.CursorPosition.Y
     } else {
         Write-UIText $title
     }
     Write-UIText (" " * ($width - ($title.length) - 4))
     Write-UIBox
-    Write-UINewLine $True
+    Write-UINewLine
+}
+
+
+function Update-SelectedMenuItem($old_title, $new_title, $direction) {
+    Set-UICursorPosition 0 $script:ui_menu_selected_line
+    Write-UIMenuItem $old_title
+    Set-UICursorPosition 0 ($script:ui_menu_selected_line + $direction)
+    $script:selected += $direction
+    Write-UIMenuItem $new_title $True
 }
 
 
@@ -345,9 +358,12 @@ function Draw-UIMain() {
     }
 
     # draw the command preview line
+    Write-UIBlankLine 2
+    Set-UICursorOffset 0 -2
     if($script:saved_connections.Count -gt 0) {
         $text = Get-Content $($script:saved_connections[$script:selected])
     }
+    $script:command_preview_line = (Get-Host).UI.RawUI.CursorPosition.Y
     Write-UIWrappedText $text $true
 }
 
@@ -357,21 +373,30 @@ if(-not(Test-Path $CONNECTION_FOLDER)) {
 }
 while($True) {
     Reset-UIBufferSize
-    if($script:update_ui) {
+    if($script:update_ui -or $script:ui_last_console_width -ne (Get-UIConsoleWidth)) {
         Draw-UIMain
         $script:update_ui = $False
+        $script:ui_last_console_width = (Get-UIConsoleWidth)
     }
 
     $input_char = [System.Console]::ReadKey($true)
     if($input_char.Key -eq [System.ConsoleKey]::DownArrow) {
         if($script:selected -lt $script:saved_connections.Count-1) {
-            $script:selected++
-            $script:update_ui = $True
+            Update-SelectedMenuItem ($script:saved_connections[$script:selected].Name -Replace ".txt") `
+                ($script:saved_connections[$script:selected+1].Name -Replace ".txt") 1
+            Set-UICursorPosition 0 ($script:command_preview_line)
+            Write-UIBlankLine 2
+            Set-UICursorPosition 0 ($script:command_preview_line)
+            Write-UIWrappedText (Get-Content $script:saved_connections[$script:selected])
         }
     } elseif($input_char.Key -eq [System.ConsoleKey]::UpArrow) {
         if($script:selected -gt 0) {
-            $script:selected--
-            $script:update_ui = $True
+            Update-SelectedMenuItem ($script:saved_connections[$script:selected].Name -Replace ".txt") `
+                ($script:saved_connections[$script:selected-1].Name -Replace ".txt") -1
+            Set-UICursorPosition 0 ($script:command_preview_line)
+            Write-UIBlankLine 2
+            Set-UICursorPosition 0 ($script:command_preview_line)
+            Write-UIWrappedText (Get-Content $script:saved_connections[$script:selected])
         }
     } elseif(($input_char.Key -eq "C" -and "",0 -contains $input_char.Modifiers) -or
             $input_char.Key -eq "Enter") {
