@@ -4,7 +4,7 @@
 
 $script_dir = Split-Path -parent $MyInvocation.MyCommand.Path
 Import-Module $script_dir\psui1.psm1
-$CONNECTION_FOLDER = "~\Documents\sshmgr"
+$CONNECTION_FOLDER = "~\Downloads\sshmgr"
 $script:saved_connections = @()
 $script:selected = 0
 $script:ui_last_console_width = (Get-Host).UI.RawUI.WindowSize.Width
@@ -16,9 +16,28 @@ $ORIG_FOREGROUND_COLOR = (Get-Host).UI.RawUI.ForegroundColor
 $ORIG_BACKGROUND_COLOR = (Get-Host).UI.RawUI.BackgroundColor
 
 
-# Script logic
 function Get-SavedConnections() {
     return @(Get-Item $CONNECTION_FOLDER\*)
+}
+
+
+function Get-SavedConnectionName {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [int]$number
+    )
+
+    return ($script:saved_connections[$number].Name -Replace ".txt")
+}
+
+
+function Get-SavedConnectionString {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [int]$number
+    )
+
+    return (Get-Content $script:saved_connections[$number])
 }
 
 
@@ -47,13 +66,13 @@ function New-SavedConnection() {
 
 function Connect-SavedConnection($number) {
     if(IsInvalidInput $number) {return}
-    Invoke-Expression $(Get-Content $script:saved_connections[$number])
+    Invoke-Expression $(Get-SavedConnectionString $number)
 }
 
 
 function Remove-SavedConnection($number) {
     if(IsInvalidInput $number) {return}
-    $name = $script:saved_connections[$number].Name -Replace ".txt"
+    $name = Get-SavedConnectionName $number
     $confirmaton = Read-UIPrompt "Delete $name" "Do you really want to delete $name`? " "Enter Y or N"
     if($confirmaton -eq "y") {
         Remove-Item -Force $script:saved_connections[$number]
@@ -69,7 +88,7 @@ function Remove-SavedConnection($number) {
 
 function Copy-SavedConnection($number) {
     if(IsInvalidInput $number) {return}
-    $old_name = $script:saved_connections[$number].Name -Replace ".txt"
+    $old_name = Get-SavedConnectionName $number
     $name = Read-UIPrompt "Duplicate $old_name" "Enter the name of the new saved connection (a copy of $old_name)" "Name"
     $file = "$CONNECTION_FOLDER\$name.txt"
     if(Test-Path $file) {
@@ -84,7 +103,7 @@ function Copy-SavedConnection($number) {
 
 function Edit-SavedConnection($number) {
     if(IsInvalidInput $number) {return}
-    $original_string = Get-Content $script:saved_connections[$number]
+    $original_string = Get-SavedConnectionString $number
     $name = $script:saved_connections[$number].Name
     $new_string = Read-UIPrompt "Edit $name" "Enter the new SSH string for $name (it was `"$original_string`")" "New string"
     if($new_string) {
@@ -96,7 +115,7 @@ function Edit-SavedConnection($number) {
 
 function Rename-SavedConnection($number) {
     if(IsInvalidInput $number) {return}
-    $original_name = $script:saved_connections[$number].Name -Replace ".txt"
+    $original_name = Get-SavedConnectionName $number
     $new_name = Read-UIPrompt "Rename $original_name" "Enter a new name for $original_name" "New name"
     if($new_name -and $new_name -ne $original_name) {
         if(-not(Test-Path "$CONNECTION_FOLDER\$new_name.txt")) {
@@ -108,6 +127,19 @@ function Rename-SavedConnection($number) {
         }
     }
     $script:saved_connections = @(Get-SavedConnections)
+}
+
+
+function Write-SavedConnectionPreview {
+    Param(
+        [int]$number
+    )
+
+    $connection_string = Get-SavedConnectionString $number
+    Set-UICursorPosition 0 ($script:command_preview_line)
+    Write-UIBlankLine 3
+    Set-UICursorPosition 0 ($script:command_preview_line)
+    Write-UIWrappedText $connection_string
 }
 
 
@@ -140,8 +172,7 @@ function Draw-UIMain() {
     $script:saved_connections = @(Get-SavedConnections)
     Write-UITitleLine "SAVED CONNECTIONS"
     for($i=0; $i -lt $script:saved_connections.Count; $i++) {
-        $connection = $script:saved_connections[$i]
-        $name = $connection.Name -Replace ".txt"
+        $name = Get-SavedConnectionName $i
         if($i -eq $script:selected) {
             Write-UIMenuItem $name $True
         } else {
@@ -158,13 +189,12 @@ function Draw-UIMain() {
     }
 
     # draw the command preview line
-    Write-UIBlankLine 2
-    Set-UICursorOffset 0 -2
-    if($script:saved_connections.Count -gt 0) {
-        $text = Get-Content $($script:saved_connections[$script:selected])
-    }
     $script:command_preview_line = (Get-Host).UI.RawUI.CursorPosition.Y
-    Write-UIWrappedText $text $true
+    if($script:saved_connections.Count -gt 0) {
+        Write-SavedConnectionPreview $script:selected
+    } else {
+        Write-UIBlankLine 3
+    }
 }
 
 
@@ -183,30 +213,22 @@ while($True) {
     if($input_char.Key -eq [System.ConsoleKey]::DownArrow -or $input_char.Key -eq "J") {
         if($script:selected -lt $script:saved_connections.Count-1) {
             $direction = 1
-            Update-SelectedMenuItem ($script:saved_connections[$script:selected].Name -Replace ".txt") `
-                ($script:saved_connections[$script:selected+1].Name -Replace ".txt") 1
+            Update-SelectedMenuItem (Get-SavedConnectionName ($script:selected)) (Get-SavedConnectionName ($script:selected+1)) $direction
             $script:selected += $direction
-            Set-UICursorPosition 0 ($script:command_preview_line)
-            Write-UIBlankLine 2
-            Set-UICursorPosition 0 ($script:command_preview_line)
-            Write-UIWrappedText (Get-Content $script:saved_connections[$script:selected])
+            Write-SavedConnectionPreview $script:selected
         }
     } elseif($input_char.Key -eq [System.ConsoleKey]::UpArrow -or $input_char.Key -eq "K") {
         if($script:selected -gt 0) {
             $direction = -1
-            Update-SelectedMenuItem ($script:saved_connections[$script:selected].Name -Replace ".txt") `
-                ($script:saved_connections[$script:selected-1].Name -Replace ".txt") -1
+            Update-SelectedMenuItem (Get-SavedConnectionName ($script:selected)) (Get-SavedConnectionName ($script:selected-1)) $direction
             $script:selected += $direction
-            Set-UICursorPosition 0 ($script:command_preview_line)
-            Write-UIBlankLine 2
-            Set-UICursorPosition 0 ($script:command_preview_line)
-            Write-UIWrappedText (Get-Content $script:saved_connections[$script:selected])
+            Write-SavedConnectionPreview $script:selected
         }
     } elseif(($input_char.Key -eq "C" -and "",0 -contains $input_char.Modifiers) -or
             $input_char.Key -eq "Enter") {
         Clear-Host
         Write-Host "Connecting SSH session..."
-        Write-Host "Command: $(Get-Content $script:saved_connections[$script:selected])"
+        Write-Host "Command: $(Get-SavedConnectionString $script:selected)"
         Connect-SavedConnection $script:selected
         $script:update_ui = $True
     } elseif($input_char.Key -eq "D" -and "",0 -contains $input_char.Modifiers) {
