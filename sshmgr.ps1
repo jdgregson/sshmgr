@@ -7,12 +7,9 @@ Import-Module $script_dir\psui1.psm1
 $CONNECTION_FOLDER = "~\Documents\sshmgr"
 $script:saved_connections = @()
 $script:selected = 0
-$script:ui_menu_selected_line = 0
 $script:ui_last_console_width = (Get-Host).UI.RawUI.WindowSize.Width
 $script:command_preview_line = 0
 $script:update_ui = $True
-$UI_CHAR_BLOCK = " "
-$UI_CHAR_BORDER_BOTTOM = "_"
 $UI_FOREGROUND_COLOR = (Get-Host).UI.RawUI.ForegroundColor
 $UI_BACKGROUND_COLOR = (Get-Host).UI.RawUI.BackgroundColor
 $ORIG_FOREGROUND_COLOR = (Get-Host).UI.RawUI.ForegroundColor
@@ -134,8 +131,7 @@ function Draw-UIMain() {
     Clear-Host
 
     # draw the commands list
-    $menu = "connect: c, ","new: n, ","edit: e, ","rename:r, ","delete: d, ",
-        "duplicate: ctrl + d, ","quit: q"
+    $menu = "connect: c, new: n, edit: e, rename:r, delete: d, duplicate: ctrl + d, quit: q"
     Write-UITitleLine "COMMANDS"
     Write-UIWrappedText $menu
     Write-UIBlankLine
@@ -186,8 +182,10 @@ while($True) {
     $input_char = [System.Console]::ReadKey($true)
     if($input_char.Key -eq [System.ConsoleKey]::DownArrow -or $input_char.Key -eq "J") {
         if($script:selected -lt $script:saved_connections.Count-1) {
+            $direction = 1
             Update-SelectedMenuItem ($script:saved_connections[$script:selected].Name -Replace ".txt") `
                 ($script:saved_connections[$script:selected+1].Name -Replace ".txt") 1
+            $script:selected += $direction
             Set-UICursorPosition 0 ($script:command_preview_line)
             Write-UIBlankLine 2
             Set-UICursorPosition 0 ($script:command_preview_line)
@@ -195,8 +193,10 @@ while($True) {
         }
     } elseif($input_char.Key -eq [System.ConsoleKey]::UpArrow -or $input_char.Key -eq "K") {
         if($script:selected -gt 0) {
+            $direction = -1
             Update-SelectedMenuItem ($script:saved_connections[$script:selected].Name -Replace ".txt") `
                 ($script:saved_connections[$script:selected-1].Name -Replace ".txt") -1
+            $script:selected += $direction
             Set-UICursorPosition 0 ($script:command_preview_line)
             Write-UIBlankLine 2
             Set-UICursorPosition 0 ($script:command_preview_line)

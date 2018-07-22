@@ -4,7 +4,12 @@
 # License: GNU GPLv3
 
 
-function Get-UIBlockChar() {
+Set-Alias -Name "Pause-UI" -Value "Wait-AnyKey"
+$script:ui_menu_selected_line = 0
+$UI_CHAR_BORDER_BOTTOM = "_"
+
+
+function Get-UIBlockChar {
     if($script:ui_block_char) {
         return $script:ui_block_char
     } else {
@@ -13,48 +18,68 @@ function Get-UIBlockChar() {
 }
 
 
-function Set-UIBlockChar($char) {
-    $script:ui_block_char = $char
+function Set-UIBlockChar {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [string]$character
+    )
+
+    $script:ui_block_char = $character
 }
 
 
-function Get-UIConsoleWidth() {
+function Get-UIConsoleWidth {
     return (Get-Host).UI.RawUI.WindowSize.Width
 }
 
 
-function Get-UIConsoleHeight() {
+function Get-UIConsoleHeight {
     return (Get-Host).UI.RawUI.WindowSize.Height
 }
 
 
-function Get-UIPSVersion() {
+function Get-UIPSVersion {
     return $PSVersionTable.PSVersion.Major
 }
 
 
-function Write-UIText($message) {
+function Write-UIText {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [string]$message
+    )
+
     [System.Console]::Write($message)
 }
 
-function Pause-UI() {
+
+function Wait-AnyKey {
     cmd /c pause
 }
 
 
-function Write-UIBox($count = 1) {
+function Write-UIBox {
+    Param(
+        [int]$count = 1
+    )
+
     if($count -gt 0) {
         Write-UITextInverted $((Get-UIBlockChar) * $count)
     }
 }
 
 
-function Reset-UIBufferSize() {
+function Reset-UIBufferSize {
     Set-UIBufferSize (Get-UIConsoleWidth)
 }
 
 
-function Write-UITextInverted($message) {
+function Write-UITextInverted {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [string]$message
+    )
+
     $saved_background_color = (Get-Host).UI.RawUI.BackgroundColor
     $saved_foreground_color = (Get-Host).UI.RawUI.ForegroundColor
     (Get-Host).UI.RawUI.ForegroundColor = $saved_background_color
@@ -65,7 +90,14 @@ function Write-UITextInverted($message) {
 }
 
 
-function Write-UIWrappedText($text, $wrap_anywhere = $False, $width = (Get-UIConsoleWidth)) {
+function Write-UIWrappedText {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [string]$text,
+        [bool]$wrap_anywhere = $False,
+        [int]$width = (Get-UIConsoleWidth)
+    )
+
     if($wrap_anywhere) {
         $split = $text -Split ""
         $join = ""
@@ -99,12 +131,21 @@ function Write-UIWrappedText($text, $wrap_anywhere = $False, $width = (Get-UICon
 }
 
 
-function Write-UITitleLine($title) {
+function Write-UITitleLine {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [string]$title
+    )
+
     Write-UIWrappedText $title
 }
 
 
-function Write-UIBlankLine($count = 1) {
+function Write-UIBlankLine {
+    Param(
+        [int]$count = 1
+    )
+
     for($i=0; $i -lt $count; $i++) {
         Write-UIBox (Get-UIConsoleWidth)
         Write-UINewLine
@@ -112,14 +153,23 @@ function Write-UIBlankLine($count = 1) {
 }
 
 
-function Write-UINewLine($force = $False) {
-    if((Get-UIPSVersion) -eq 5 -or $force -eq $true) {
+function Write-UINewLine {
+    Param(
+        [bool]$force = $False
+    )
+
+    if((Get-UIPSVersion) -eq 5 -or $force -eq $True) {
         [System.Console]::Write("`n")
     }
 }
 
 
-function Set-UICursorOffset($x, $y) {
+function Set-UICursorOffset {
+    Param(
+        [int]$x = 0,
+        [int]$y = 0
+    )
+
     $saved_position = (Get-Host).UI.RawUI.CursorPosition
     $saved_position.X = $saved_position.X + $x
     $saved_position.Y = $saved_position.Y + $y
@@ -127,7 +177,12 @@ function Set-UICursorOffset($x, $y) {
 }
 
 
-function Set-UICursorPosition($x, $y) {
+function Set-UICursorPosition {
+    Param(
+        [int]$x = 0,
+        [int]$y = 0
+    )
+
     $saved_position = (Get-Host).UI.RawUI.CursorPosition
     $saved_position.X = $x
     $saved_position.Y = $y
@@ -135,19 +190,33 @@ function Set-UICursorPosition($x, $y) {
 }
 
 
-function Set-UIBufferSize($width = $False, $height = $False) {
+function Set-UIBufferSize {
+    Param(
+        [int]$width = 0,
+        [int]$height = 0
+    )
+
     $saved_buffer = (Get-Host).UI.RawUI.BufferSize
-    if(-not($width -eq $False)) {
+    if(-not($width -eq 0)) {
         $saved_buffer.Width = $width
     }
-    if(-not($height -eq $False)) {
+    if(-not($height -eq 0)) {
         $saved_buffer.Height = $height
     }
     (Get-Host).UI.RawUI.BufferSize = $saved_buffer
 }
 
 
-function Read-UIPrompt($title, $text, $prompt) {
+function Read-UIPrompt {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [string]$title,
+        [Parameter(Mandatory=$true)]
+        [string]$text,
+        [Parameter(Mandatory=$true)]
+        [string]$prompt
+    )
+
     Reset-UIBufferSize
     Set-UICursorPosition 0 0
     Write-UITitleLine $title
@@ -156,7 +225,7 @@ function Read-UIPrompt($title, $text, $prompt) {
     Write-UIBlankLine
     Write-UIBlankLine
     Write-UIBlankLine
-    Write-UIText (($UI_CHAR_BORDER_BOTTOM) * (Get-UIConsoleWidth))
+    Write-UIText $(($UI_CHAR_BORDER_BOTTOM) * (Get-UIConsoleWidth))
     Set-UICursorOffset 0 -3
     Write-UIBox 4
     Write-UITextInverted "$prompt`: "
@@ -164,7 +233,13 @@ function Read-UIPrompt($title, $text, $prompt) {
 }
 
 
-function Write-UIError($message, $title = "Error") {
+function Write-UIError {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [string]$message,
+        [string]$title = "Error"
+    )
+
     Reset-UIBufferSize
     Set-UICursorPosition 0 0
     $saved_background_color = (Get-Host).UI.RawUI.BackgroundColor
@@ -181,11 +256,18 @@ function Write-UIError($message, $title = "Error") {
     Write-UIBox 3
     (Get-Host).UI.RawUI.ForegroundColor = $saved_foreground_color
     (Get-Host).UI.RawUI.BackgroundColor = $saved_background_color
-    Pause-UI
+    Wait-AnyKey
 }
 
 
-function Write-UIMenuItem($title, $selected = $False, $width = (Get-UIConsoleWidth)) {
+function Write-UIMenuItem {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [string]$title,
+        [bool]$selected = $False,
+        [int]$width = (Get-UIConsoleWidth)
+    )
+
     Write-UIBox
     if($title.length -gt ($width - 5)) {
         $title = $title.Substring(0, ($width - 8)) + "..."
@@ -203,10 +285,18 @@ function Write-UIMenuItem($title, $selected = $False, $width = (Get-UIConsoleWid
 }
 
 
-function Update-SelectedMenuItem($old_title, $new_title, $direction) {
+function Update-SelectedMenuItem {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [string]$old_title,
+        [Parameter(Mandatory=$true)]
+        [string]$new_title,
+        [Parameter(Mandatory=$true)]
+        [int]$direction
+    )
+
     Set-UICursorPosition 0 $script:ui_menu_selected_line
     Write-UIMenuItem $old_title
     Set-UICursorPosition 0 ($script:ui_menu_selected_line + $direction)
-    $script:selected += $direction
     Write-UIMenuItem $new_title $True
 }
