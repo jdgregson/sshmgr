@@ -4,7 +4,7 @@
 
 $script_dir = Split-Path -parent $MyInvocation.MyCommand.Path
 Import-Module $script_dir\psui1.psm1
-$CONNECTION_FOLDER = "~\Downloads\sshmgr"
+$CONNECTION_FOLDER = "~\Documents\sshmgr"
 $script:saved_connections = @()
 $script:selected = 0
 $script:ui_last_console_width = (Get-Host).UI.RawUI.WindowSize.Width
@@ -79,7 +79,9 @@ function Remove-SavedConnection($number) {
         if(Test-Path "$CONNECTION_FOLDER\$name.txt") {
             Write-UIError "Unable to delete $name"
         } else {
-            $script:selected--
+            if($script:selected -gt 0) {
+                $script:selected--
+            }
         }
     }
     $script:saved_connections = @(Get-SavedConnections)
