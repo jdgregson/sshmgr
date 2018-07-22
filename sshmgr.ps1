@@ -8,7 +8,6 @@ $script:selected = 0
 $script:ui_menu_selected_line = 0
 $script:ui_last_console_width = (Get-Host).UI.RawUI.WindowSize.Width
 $script:command_preview_line = 0
-[System.Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic') | Out-Null
 $script:update_ui = $True
 $UI_CHAR_BLOCK = " "
 $UI_CHAR_BORDER_BOTTOM = "_"
