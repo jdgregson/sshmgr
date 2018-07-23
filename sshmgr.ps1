@@ -16,7 +16,7 @@ $ORIG_FOREGROUND_COLOR = (Get-Host).UI.RawUI.ForegroundColor
 $ORIG_BACKGROUND_COLOR = (Get-Host).UI.RawUI.BackgroundColor
 
 
-function Get-SavedConnections() {
+function Get-SavedConnections {
     return @(Get-Item $CONNECTION_FOLDER\*)
 }
 
@@ -41,7 +41,7 @@ function Get-SavedConnectionString {
 }
 
 
-function New-SavedConnection() {
+function New-SavedConnection {
     $name = Read-UIPrompt "New Saved Connection" "Enter a name for the new saved connection." "Name"
     if(-not($name)) {
         Write-UIError "You must enter a name"
@@ -64,13 +64,23 @@ function New-SavedConnection() {
 }
 
 
-function Connect-SavedConnection($number) {
+function Connect-SavedConnection {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [int]$number
+    )
+
     if(IsInvalidInput $number) {return}
     Invoke-Expression $(Get-SavedConnectionString $number)
 }
 
 
-function Remove-SavedConnection($number) {
+function Remove-SavedConnection {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [int]$number
+    )
+
     if(IsInvalidInput $number) {return}
     $name = Get-SavedConnectionName $number
     $confirmaton = Read-UIPrompt "Delete $name" "Do you really want to delete $name`? " "Enter Y or N"
@@ -88,7 +98,12 @@ function Remove-SavedConnection($number) {
 }
 
 
-function Copy-SavedConnection($number) {
+function Copy-SavedConnection {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [int]$number
+    )
+
     if(IsInvalidInput $number) {return}
     $old_name = Get-SavedConnectionName $number
     $name = Read-UIPrompt "Duplicate $old_name" "Enter the name of the new saved connection (a copy of $old_name)" "Name"
@@ -103,7 +118,12 @@ function Copy-SavedConnection($number) {
 }
 
 
-function Edit-SavedConnection($number) {
+function Edit-SavedConnection {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [int]$number
+    )
+
     if(IsInvalidInput $number) {return}
     $original_string = Get-SavedConnectionString $number
     $name = $script:saved_connections[$number].Name
@@ -115,7 +135,12 @@ function Edit-SavedConnection($number) {
 }
 
 
-function Rename-SavedConnection($number) {
+function Rename-SavedConnection {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [int]$number
+    )
+
     if(IsInvalidInput $number) {return}
     $original_name = Get-SavedConnectionName $number
     $new_name = Read-UIPrompt "Rename $original_name" "Enter a new name for $original_name" "New name"
@@ -145,7 +170,12 @@ function Write-SavedConnectionPreview {
 }
 
 
-function IsInvalidInput($number) {
+function IsInvalidInput {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [int]$number
+    )
+
     try {
         $number = [int]$number
     } catch {}
@@ -161,7 +191,7 @@ function IsInvalidInput($number) {
 }
 
 
-function Draw-UIMain() {
+function Draw-UIMain {
     Clear-Host
 
     # draw the commands list
