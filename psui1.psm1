@@ -190,6 +190,16 @@ function Set-UICursorPosition {
 }
 
 
+function Get-UICursorPositionX {
+    return (Get-Host).UI.RawUI.CursorPosition.X
+}
+
+
+function Get-UICursorPositionY {
+    return (Get-Host).UI.RawUI.CursorPosition.Y
+}
+
+
 function Set-UIBufferSize {
     Param(
         [int]$width = 0,
