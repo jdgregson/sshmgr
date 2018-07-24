@@ -285,7 +285,7 @@ function Write-UIMenuItem {
 }
 
 
-function Update-SelectedMenuItem {
+function Update-UISelectedMenuItem {
     Param(
         [Parameter(Mandatory=$true)]
         [string]$old_title,

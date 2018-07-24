@@ -245,14 +245,17 @@ while($True) {
     if($input_char.Key -eq [System.ConsoleKey]::DownArrow -or $input_char.Key -eq "J") {
         if($script:selected -lt $script:saved_connections.Count-1) {
             $direction = 1
-            Update-SelectedMenuItem (Get-SavedConnectionName ($script:selected)) (Get-SavedConnectionName ($script:selected+1)) $direction
+            Update-UISelectedMenuItem (Get-SavedConnectionName ($script:selected)) (Get-SavedConnectionName ($script:selected+1)) $direction
             $script:selected += $direction
             Write-SavedConnectionPreview $script:selected
+            if(($script:selected + $script:first_menu_line) -eq ($script:last_menu_line)) {
+                $update_ui = $True
+            }
         }
     } elseif($input_char.Key -eq [System.ConsoleKey]::UpArrow -or $input_char.Key -eq "K") {
         if($script:selected -gt 0) {
             $direction = -1
-            Update-SelectedMenuItem (Get-SavedConnectionName ($script:selected)) (Get-SavedConnectionName ($script:selected-1)) $direction
+            Update-UISelectedMenuItem (Get-SavedConnectionName ($script:selected)) (Get-SavedConnectionName ($script:selected-1)) $direction
             $script:selected += $direction
             Write-SavedConnectionPreview $script:selected
         }
