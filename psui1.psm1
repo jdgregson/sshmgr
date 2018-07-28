@@ -92,10 +92,10 @@ function Write-UITextInverted {
 
 function Write-UIWrappedText {
     Param(
-        [Parameter(Mandatory=$true)]
-        [string]$text,
+        [string]$text = "",
         [bool]$wrap_anywhere = $False,
-        [int]$width = (Get-UIConsoleWidth)
+        [int]$width = (Get-UIConsoleWidth),
+        [int]$MaxLines = 0
     )
 
     if($wrap_anywhere) {
@@ -108,7 +108,7 @@ function Write-UIWrappedText {
     $finished = $false
     $i = 0
     $written_lines = 0;
-    while(-not($finished)) {
+    while($text -and (-not $finished) -and (-not ($MaxLines -gt 0 -and $written_lines -ge $MaxLines))) {
         Write-UIBox 3
         $out_line = ""
         for(; $i -lt $split.Count; $i++) {
