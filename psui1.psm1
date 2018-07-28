@@ -1,5 +1,5 @@
 
-# psui1 - a basic, text-based user interface module for PowerShell
+# psui1 - a text-based user interface module for PowerShell
 # Copyright (C) 2018 - jdgregson
 # License: GNU GPLv3
 
