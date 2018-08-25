@@ -1,4 +1,3 @@
-
 # psui1 - a text-based user interface module for PowerShell
 # Copyright (C) 2018 - jdgregson
 # License: GNU GPLv3
@@ -7,6 +6,9 @@
 Set-Alias -Name "Pause-UI" -Value "Wait-AnyKey"
 $script:ui_menu_selected_line = 0
 $UI_CHAR_BORDER_BOTTOM = "_"
+$UIColors = "Black","DarkBlue","DarkGreen","DarkCyan","DarkRed","DarkMagenta",
+    "DarkYellow","Gray","DarkGray","Blue","Green","Cyan","Red","Magenta",
+    "Yellow","White"
 
 
 function Get-UIBlockChar {
@@ -49,7 +51,25 @@ function Write-UIText {
         [string]$message
     )
 
-    [System.Console]::Write($message)
+    [System.Console]::Write($message);
+}
+
+
+function Write-UIColoredText {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [string]$message,
+        [string]$BackgroundColor = (Get-Host).UI.RawUI.BackgroundColor,
+        [string]$ForegroundColor = (Get-Host).UI.RawUI.ForegroundColor
+    )
+
+    $saved_background_color = (Get-Host).UI.RawUI.BackgroundColor
+    $saved_foreground_color = (Get-Host).UI.RawUI.ForegroundColor
+    (Get-Host).UI.RawUI.ForegroundColor = $ForegroundColor
+    (Get-Host).UI.RawUI.BackgroundColor = $BackgroundColor
+    [System.Console]::Write($message);
+    (Get-Host).UI.RawUI.ForegroundColor = $saved_foreground_color
+    (Get-Host).UI.RawUI.BackgroundColor = $saved_background_color
 }
 
 
@@ -164,6 +184,40 @@ function Write-UINewLine {
 }
 
 
+function Write-UIBorder {
+    Param(
+        [int]$height = 0,
+        [int]$width = 0,
+        [int]$StartX = 0,
+        [int]$StartY = 0,
+        [string]$BorderCharacter = " "
+    )
+
+    if($height -and $width) {
+        Throw "Cannot specify both height and width"
+    }
+
+    $original_position_x = (Get-UICursorPositionX)
+    $original_position_y = (Get-UICursorPositionX)
+    Set-UICursorPosition -x $StartX -y $StartY
+    if($height) {
+        While(((Get-UICursorPositionY) + $StartY) -lt $height) {
+            Write-UITextInverted $BorderCharacter
+            Set-UICursorPosition -x $StartX -y ((Get-UICursorPositionY) + 1)
+        }
+    } elseif($width) {
+        While(((Get-UICursorPositionX) + $StartX) -lt $width) {
+            Write-UITextInverted $BorderCharacter
+            if((Get-UICursorPositionX) -ge (Get-UIConsoleWidth) - 1) {
+                Write-UITextInverted $BorderCharacter
+                break
+            }
+        }
+    }
+    Set-UICursorPosition -x $original_position_x -y $original_position_y
+}
+
+
 function Set-UICursorOffset {
     Param(
         [int]$x = 0,
@@ -183,10 +237,19 @@ function Set-UICursorPosition {
         [int]$y = 0
     )
 
+    if($x -lt 0) {$x = 0}
+    if($x -ge (Get-UIConsoleWidth)) {$x = (Get-UIConsoleWidth) - 1}
+    if($y -lt 0) {$y = 0}
+    if($y -ge (Get-UIConsoleHeight)) {$y = (Get-UIConsoleHeight) - 1}
+
     $saved_position = (Get-Host).UI.RawUI.CursorPosition
     $saved_position.X = $x
     $saved_position.Y = $y
-    (Get-Host).UI.RawUI.CursorPosition = $saved_position
+    try {
+        (Get-Host).UI.RawUI.CursorPosition = $saved_position
+    } catch {
+        Throw "The cursor position $saved_position is out of bounds."
+    }
 }
 
 
@@ -197,6 +260,24 @@ function Get-UICursorPositionX {
 
 function Get-UICursorPositionY {
     return (Get-Host).UI.RawUI.CursorPosition.Y
+}
+
+
+function Get-UIColorsAtPosition {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [int]$x,
+        [Parameter(Mandatory=$true)]
+        [int]$y
+    )
+
+    $colors = (Get-Host).UI.RawUI.GetBufferContents(@{
+        Left=$x; Right=$x; Top=$y; Bottom=$y;
+    })
+    return @{
+        ForegroundColor=$colors.ForegroundColor;
+        BackgroundColor=$colors.BackgroundColor;
+    }
 }
 
 
@@ -309,4 +390,21 @@ function Update-UISelectedMenuItem {
     Write-UIMenuItem $old_title
     Set-UICursorPosition 0 ($script:ui_menu_selected_line + $direction)
     Write-UIMenuItem $new_title $True
+}
+
+
+function Get-UIRandomCharacter {
+    return ([char]$(Get-Random -Min 33 -Max 128))
+}
+
+
+function Get-UIRandomColor {
+    return $UIColors[$(Get-Random -Min 0 -Max $UIColors.Count)]
+}
+
+
+function Draw-UIScreenBomb {
+    while($True) {
+        Write-Host (Get-UIRandomCharacter) -NoNewline -BackgroundColor (Get-UIRandomColor) -ForegroundColor (Get-UIRandomColor)
+    }
 }
