@@ -322,7 +322,7 @@ function Read-UIPrompt {
     if($DefaultValue) {
         $saved_position_x = (Get-UICursorPositionX)
         $saved_position_y = (Get-UICursorPositionY)
-        Write-UIColoredText $DefaultValue -ForegroundColor Blue
+        Write-UIColoredText $DefaultValue -ForegroundColor Yellow
         Set-UICursorPosition -x $saved_position_x -y $saved_position_y
     }
     return Read-Host
