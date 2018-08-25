@@ -305,7 +305,8 @@ function Read-UIPrompt {
         [Parameter(Mandatory=$true)]
         [string]$text,
         [Parameter(Mandatory=$true)]
-        [string]$prompt
+        [string]$prompt,
+        [string]$DefaultValue = ""
     )
 
     Reset-UIBufferSize
@@ -313,13 +314,15 @@ function Read-UIPrompt {
     Write-UITitleLine $title
     Write-UIBlankLine
     Write-UIWrappedText $text
-    Write-UIBlankLine
-    Write-UIBlankLine
-    Write-UIBlankLine
+    Write-UIBlankLine 4
     Write-UIText $(($UI_CHAR_BORDER_BOTTOM) * (Get-UIConsoleWidth))
     Set-UICursorOffset 0 -3
     Write-UIBox 4
     Write-UITextInverted "$prompt`: "
+    $saved_position_x = (Get-UICursorPositionX)
+    $saved_position_y = (Get-UICursorPositionY)
+    Write-UIText $DefaultValue
+    Set-UICursorPosition -x $saved_position_x -y $saved_position_y
     return Read-Host
 }
 
