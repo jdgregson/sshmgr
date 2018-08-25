@@ -131,7 +131,7 @@ function Remove-SavedConnection {
     )
 
     $name = Get-SavedConnectionName $page_number $item_number
-    $confirmaton = Read-UIPrompt "Delete '$name'" "Do you really want to delete '$name'`? " "Enter Y or N"
+    $confirmaton = Read-UIPrompt "Delete '$name'" "Do you really want to delete '$name'`? " "Enter Y or N" "N"
     if($confirmaton -eq "y") {
         Remove-Item -Force $script:pages[$page_number][$item_number]
         if(Test-Path "$CONNECTION_FOLDER\$name.txt") {
@@ -153,7 +153,7 @@ function Copy-SavedConnection {
     )
 
     $old_name = Get-SavedConnectionName $page_number $item_number
-    $name = Read-UIPrompt "Duplicate '$old_name'" "Enter the name of the new saved connection (a copy of '$old_name')" "Name"
+    $name = Read-UIPrompt "Duplicate '$old_name'" "Enter the name of the new saved connection (a copy of '$old_name')" "Name" $old_name
     $file = "$CONNECTION_FOLDER\$name.txt"
     if(Test-Path $file) {
         Write-UIError "'$name' already exists, please enter a different name."
@@ -178,7 +178,7 @@ function Edit-SavedConnection {
 
     $original_string = Get-SavedConnectionString $page_number $item_number
     $name = Get-SavedConnectionName $page_number $item_number
-    $new_string = Read-UIPrompt "Edit '$name'" "Enter the new SSH string for '$name' (it was '$original_string')" "New string"
+    $new_string = Read-UIPrompt "Edit '$name'" "Enter the new SSH string for '$name' (it was '$original_string')" "New string" $original_string
     if($new_string) {
         $new_string > $script:pages[$page_number][$item_number]
     }
@@ -193,7 +193,7 @@ function Rename-SavedConnection {
     )
 
     $original_name = Get-SavedConnectionName $page_number $item_number
-    $new_name = Read-UIPrompt "Rename '$original_name'" "Enter a new name for '$original_name'" "New name"
+    $new_name = Read-UIPrompt "Rename '$original_name'" "Enter a new name for '$original_name'" "New name" $original_name
     if($new_name -and $new_name -ne $original_name) {
         if(-not(Test-Path "$CONNECTION_FOLDER\$new_name.txt")) {
             Rename-Item $script:pages[$page_number][$item_number] "$new_name.txt"
